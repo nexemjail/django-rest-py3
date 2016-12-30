@@ -1,8 +1,8 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-home_path = "~/py/django-rest"
-vm_path = "/home/vagrant/django-rest"
+home_path = "~/py/djangorest"
+vm_path = "/home/vagrant/djangorest"
 
 # All Vagrant configuration is done below. The "2" in Vagrant.configure
 # configures the configuration version (we support older styles for
@@ -26,6 +26,7 @@ Vagrant.configure("2") do |config|
   # within the machine from a port on the host machine. In the example below,
   # accessing "localhost:8080" will access port 80 on the guest machine.
   config.vm.network "forwarded_port", guest: 9000, host: 9000
+  config.vm.network "forwarded_port", guest: 5432, host: 65432
 
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.

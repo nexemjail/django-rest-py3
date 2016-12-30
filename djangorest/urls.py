@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 from django.contrib import admin
-from djangorest.api import urls as api_urls
+from api import urls as api_urls
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),

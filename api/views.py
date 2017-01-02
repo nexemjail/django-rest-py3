@@ -8,6 +8,8 @@ from rest_framework import (
     status,
     response
 )
+from rest_framework_jwt.authentication import BaseJSONWebTokenAuthentication
+
 from .serializers import (
     UserLoginSerializer,
     UserCreateSerializer,
@@ -15,39 +17,43 @@ from .serializers import (
 )
 
 
-class UserDetailAPIView(generics.RetrieveAPIView):
+class UserDetailAPIView(generics.RetrieveAPIView, BaseJSONWebTokenAuthentication):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_jwt_value(self, request):
+        return request.QUERY_PARAMS.get('jwt')
 
     def get_object(self):
         return get_object_or_404(User, pk=int(self.kwargs['id']))
 
 
-class UserLoginAPIView(views.APIView):
+class UserLoginAPIView(views.APIView, BaseJSONWebTokenAuthentication):
     serializer_class = UserLoginSerializer
     permission_classes = [permissions.AllowAny]
 
+    def get_jwt_value(self, request):
+        return request.QUERY_PARAMS.get('jwt')
+
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            user = authenticate(username=serializer.validated_data['username'],
-                                password=serializer.validated_data['password'])
-            if user:
-                login(request, user)
-                return response.Response({'detail': 'login successful'}, status.HTTP_200_OK)
-            return response.Response({'detail': 'user not exist or invalid credentials'}, status.HTTP_403_FORBIDDEN)
-        return response.Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
+        if request.user:
+            login(request, request.user)
+            return response.Response({'detail': 'login successful'}, status.HTTP_200_OK)
+        return response.Response({'detail': 'user not exist or invalid credentials'}, status.HTTP_403_FORBIDDEN)
 
 
-class UserLogoutAPIView(generics.RetrieveAPIView):
+class UserLogoutAPIView(generics.RetrieveAPIView, BaseJSONWebTokenAuthentication):
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_jwt_value(self, request):
+        return request.QUERY_PARAMS.get('jwt')
 
     def get(self, request):
         logout(request)
         return response.Response({'detail': 'log out was successful'}, status.HTTP_200_OK)
 
 
-class UserCreateAPIView(generics.CreateAPIView):
+class UserCreateAPIView(generics.CreateAPIView, BaseJSONWebTokenAuthentication):
     serializer_class = UserCreateSerializer
     permission_classes = [permissions.AllowAny]
     lookup_field = 'username'

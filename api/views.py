@@ -23,7 +23,7 @@ from .serializers import (
 
 class JWTAuth(BaseJSONWebTokenAuthentication):
     def get_jwt_value(self, request):
-        return request.QUERY_PARAMS.get('jwt')
+        return request.QUERY_PARAMS.get('JWT')
 
 
 class UserDetailAPIView(generics.RetrieveAPIView, JWTAuth):

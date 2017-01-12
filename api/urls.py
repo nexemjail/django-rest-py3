@@ -12,6 +12,6 @@ api_patterns = [
 ]
 
 urlpatterns = [
-    url(r'^auth$', obtain_jwt_token, name='auth'),
+    url(r'^auth/$', obtain_jwt_token, name='auth'),
     url(r'^', include(api_patterns)),
 ]

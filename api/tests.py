@@ -10,7 +10,7 @@ from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_4
 
 class ApiTestCase(TestCase):
     JWT_KEY = 'JWT '
-    AUTH_URL = '/auth'
+    AUTH_URL = '/auth/'
     REGISTER_URL = '/register/'
 
     def setUp(self):

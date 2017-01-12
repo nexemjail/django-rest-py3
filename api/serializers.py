@@ -45,14 +45,3 @@ class UserCreateSerializer(serializers.ModelSerializer):
                                         first_name=validated_data['first_name'],
                                         last_name=validated_data['last_name'],
                                         password=validated_data['password'])
-
-
-class UserLoginSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(required=True, label='Username')
-
-    class Meta:
-        model = User
-        fields = [
-            'username',
-            'password'
-        ]

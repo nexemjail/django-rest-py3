@@ -10,6 +10,8 @@ from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_4
 
 class ApiTestCase(TestCase):
     JWT_KEY = 'JWT '
+    AUTH_URL = '/auth'
+    REGISTER_URL = '/register/'
 
     def setUp(self):
         self.client = Client()
@@ -26,31 +28,33 @@ class ApiTestCase(TestCase):
     def tearDown(self):
         User.objects.filter(username=self.sample_user_payload['username']).delete()
 
+    def _get_auth_response(self):
+        return self.client.post(self.AUTH_URL, {
+            'username': self.sample_user_payload['username'],
+            'password': self.sample_user_payload['password']
+        })
+
     def test_registration(self):
-        response = self.client.post('/register/',  self.sample_user_payload)
+        response = self.client.post(self.REGISTER_URL,  self.sample_user_payload)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     def test_already_exists(self):
-        self.client.post('/register/',  self.sample_user_payload)
-        response = self.client.post('/register/',  self.sample_user_payload)
+        self.client.post(self.REGISTER_URL,  self.sample_user_payload)
+
+        response = self.client.post(self.REGISTER_URL, self.sample_user_payload)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
     def test_obtain_token(self):
-        self.client.post('/register/', self.sample_user_payload)
-        response = self.client.post('/login/', {
-            'username': self.sample_user_payload['username'],
-            'password': self.sample_user_payload['password']
-        })
+        self.client.post(self.REGISTER_URL, self.sample_user_payload)
+        response = self._get_auth_response()
+
         self.assertTrue(bool(response.data.get('token', False)), True)
 
     def test_get_info(self):
         self.client.post('/register/', self.sample_user_payload)
-        response = self.client.post('/login/', {
-            'username': self.sample_user_payload['username'],
-            'password': self.sample_user_payload['password']
-        })
+        response = self._get_auth_response()
         token = response.data['token']
 
         user_id = User.objects.get(username=self.sample_user_payload['username']).id
@@ -61,10 +65,7 @@ class ApiTestCase(TestCase):
 
     def test_invalid_token(self):
         self.client.post('/register/', self.sample_user_payload)
-        response = self.client.post('/login/', {
-            'username': self.sample_user_payload['username'],
-            'password': self.sample_user_payload['password']
-        })
+        response = self._get_auth_response()
         token = response.data['token']
 
         user_id = User.objects.get(username=self.sample_user_payload['username']).id
@@ -77,10 +78,7 @@ class ApiTestCase(TestCase):
 
         now = datetime.now()
         self.client.post('/register/', self.sample_user_payload)
-        response = self.client.post('/login/', {
-            'username': self.sample_user_payload['username'],
-            'password': self.sample_user_payload['password']
-        })
+        response = self._get_auth_response()
         token = response.data['token']
 
         with freeze_time(now + timedelta(seconds=320)):

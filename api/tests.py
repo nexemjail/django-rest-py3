@@ -9,6 +9,8 @@ from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_4
 
 
 class ApiTestCase(TestCase):
+    JWT_KEY = 'JWT '
+
     def setUp(self):
         self.client = Client()
 
@@ -53,7 +55,7 @@ class ApiTestCase(TestCase):
 
         user_id = User.objects.get(username=self.sample_user_payload['username']).id
 
-        response = self.client.get('/{}/'.format(user_id), HTTP_AUTHORIZATION='jwt ' + token)
+        response = self.client.get('/{}/'.format(user_id), HTTP_AUTHORIZATION=self.JWT_KEY + token)
 
         self.assertIn('username', response.data['data'])
 
@@ -67,7 +69,7 @@ class ApiTestCase(TestCase):
 
         user_id = User.objects.get(username=self.sample_user_payload['username']).id
 
-        response = self.client.get('/{}/'.format(user_id), HTTP_AUTHORIZATION='jwt ' + token + 'seed')
+        response = self.client.get('/{}/'.format(user_id), HTTP_AUTHORIZATION=self.JWT_KEY + token + 'seed')
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
@@ -84,7 +86,7 @@ class ApiTestCase(TestCase):
         with freeze_time(now + timedelta(seconds=320)):
             user_id = User.objects.get(username=self.sample_user_payload['username']).id
 
-            response = self.client.get('/{}/'.format(user_id), HTTP_AUTHORIZATION='jwt ' + token)
+            response = self.client.get('/{}/'.format(user_id), HTTP_AUTHORIZATION=self.JWT_KEY + token)
 
             self.assertEqual(response.status_code, 403)
 

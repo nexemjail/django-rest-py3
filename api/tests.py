@@ -52,6 +52,13 @@ class ApiTestCase(TestCase):
 
         self.assertTrue(bool(response.data.get('token', False)), True)
 
+    def test_obtain_token_error(self):
+        payload = self.sample_user_payload.copy()
+        payload['username'] = 'seed'
+        self.client.post(self.REGISTER_URL, payload)
+        response = self._get_auth_response()
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
     def test_get_info(self):
         self.client.post('/register/', self.sample_user_payload)
         response = self._get_auth_response()

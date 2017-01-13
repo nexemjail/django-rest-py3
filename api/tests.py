@@ -86,7 +86,7 @@ class ApiTestCase(TestCase):
 
             response = self.client.get('/{}/'.format(user_id), HTTP_AUTHORIZATION=self.JWT_KEY + token)
 
-            self.assertEqual(response.status_code, 403)
+            self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
 
 

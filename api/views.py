@@ -59,10 +59,12 @@ class UserCreateAPIView(generics.CreateAPIView):
         if serializer.is_valid(raise_exception=False):
             # seems strange
             self.perform_create(serializer)
+            user = serializer.instance
 
             response_json = template_response('User created',
                                               code=status.HTTP_201_CREATED,
-                                              message='User created successful')
+                                              message='User created successful',
+                                              data=UserSerializer(instance=user).data)
             return response.Response(response_json, status.HTTP_201_CREATED)
         response_json = template_response('Error',
                                           code=status.HTTP_400_BAD_REQUEST,

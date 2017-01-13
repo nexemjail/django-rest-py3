@@ -50,32 +50,35 @@ class ApiTestCase(TestCase):
         self.client.post(self.REGISTER_URL, self.sample_user_payload)
         response = self._get_auth_response()
 
-        self.assertTrue(bool(response.data.get('token', False)), True)
+        self.assertTrue(bool(response.data.get('token')), True)
 
     def test_obtain_token_error(self):
         payload = self.sample_user_payload.copy()
         payload['username'] = 'seed'
+
         self.client.post(self.REGISTER_URL, payload)
         response = self._get_auth_response()
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
     def test_get_info(self):
-        self.client.post('/register/', self.sample_user_payload)
-        response = self._get_auth_response()
-        token = response.data['token']
+        response = self.client.post(self.REGISTER_URL, self.sample_user_payload)
 
-        user_id = User.objects.get(username=self.sample_user_payload['username']).id
+        user_id = response.data.get('data').get('id')
+
+        response = self._get_auth_response()
+        token = response.data.get('token')
 
         response = self.client.get('/{}/'.format(user_id), HTTP_AUTHORIZATION=self.JWT_KEY + token)
 
         self.assertIn('username', response.data['data'])
 
     def test_invalid_token(self):
-        self.client.post('/register/', self.sample_user_payload)
+        response = self.client.post(self.REGISTER_URL, self.sample_user_payload)
+
+        user_id = response.data.get('data').get('id')
+
         response = self._get_auth_response()
         token = response.data['token']
-
-        user_id = User.objects.get(username=self.sample_user_payload['username']).id
 
         response = self.client.get('/{}/'.format(user_id), HTTP_AUTHORIZATION=self.JWT_KEY + token + 'seed')
 
@@ -84,12 +87,14 @@ class ApiTestCase(TestCase):
     def test_expiration(self):
 
         now = datetime.now()
-        self.client.post('/register/', self.sample_user_payload)
+        response = self.client.post(self.REGISTER_URL, self.sample_user_payload)
+
+        user_id = response.data.get('data').get('id')
+
         response = self._get_auth_response()
         token = response.data['token']
 
         with freeze_time(now + timedelta(seconds=320)):
-            user_id = User.objects.get(username=self.sample_user_payload['username']).id
 
             response = self.client.get('/{}/'.format(user_id), HTTP_AUTHORIZATION=self.JWT_KEY + token)
 

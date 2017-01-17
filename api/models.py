@@ -1,3 +1,22 @@
+from django.contrib.auth.models import User
 from django.db import models
 
-# Create your models here.
+
+class Event(models.Model):
+    user = models.ForeignKey(User)
+    description = models.TextField('Event description', null=True)
+    start = models.DateTimeField()
+    end = models.DateTimeField()
+    periodic = models.BooleanField(default=False)
+    period = models.DateTimeField(null=True)
+    next_notification = models.DateTimeField(null=True)
+
+
+class EventMediaInfo(models.Model):
+    event = models.ForeignKey(Event)
+    media = models.FileField(null=True)
+
+
+class EventLabel(models.Model):
+    event = models.ForeignKey(Event)
+    label = models.CharField(max_length=100)

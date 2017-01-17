@@ -1,50 +1,52 @@
 from django.contrib.auth.models import User
-from django.contrib.auth import login, authenticate, logout
-from django.shortcuts import get_object_or_404
 from rest_framework import (
     permissions,
     generics,
-    views,
     status,
     response
 )
+from rest_framework_jwt.authentication import BaseJSONWebTokenAuthentication
+
+from .utils import template_response
+
 from .serializers import (
-    UserLoginSerializer,
     UserCreateSerializer,
     UserSerializer
 )
 
 
-class UserDetailAPIView(generics.RetrieveAPIView):
+class JWTAuth(BaseJSONWebTokenAuthentication):
+    def get_jwt_value(self, request):
+        return request.QUERY_PARAMS.get('JWT')
+
+
+class UserDetailAPIView(generics.RetrieveAPIView, JWTAuth):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        return get_object_or_404(User, pk=int(self.kwargs['id']))
+        pk = int(self.kwargs['id'])
+        if pk < 0:
+            return None
+        try:
+            return User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return None
 
+    def get(self, request, *args, **kwargs):
+        user = self.get_object()
+        if user:
+            serialized_user = self.serializer_class(user).data
+            response_json = template_response(status='OK',
+                                              code=status.HTTP_200_OK,
+                                              message='Get object',
+                                              data=serialized_user)
+            return response.Response(response_json, status.HTTP_200_OK)
 
-class UserLoginAPIView(views.APIView):
-    serializer_class = UserLoginSerializer
-    permission_classes = [permissions.AllowAny]
-
-    def post(self, request):
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            user = authenticate(username=serializer.validated_data['username'],
-                                password=serializer.validated_data['password'])
-            if user:
-                login(request, user)
-                return response.Response({'detail': 'login successful'}, status.HTTP_200_OK)
-            return response.Response({'detail': 'user not exist or invalid credentials'}, status.HTTP_403_FORBIDDEN)
-        return response.Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
-
-
-class UserLogoutAPIView(generics.RetrieveAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        logout(request)
-        return response.Response({'detail': 'log out was successful'}, status.HTTP_200_OK)
+        response_json = template_response(status='Error',
+                                          code=status.HTTP_404_NOT_FOUND,
+                                          message='Object not found')
+        return response.Response(response_json, status.HTTP_404_NOT_FOUND)
 
 
 class UserCreateAPIView(generics.CreateAPIView):
@@ -54,11 +56,20 @@ class UserCreateAPIView(generics.CreateAPIView):
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid(raise_exception=True):
+        if serializer.is_valid(raise_exception=False):
             # seems strange
-            if User.objects.filter(username=serializer.validated_data['username']).exists():
-                return response.Response({'detail': 'user already exists'}, status.HTTP_409_CONFLICT)
             self.perform_create(serializer)
-            return response.Response({'detail': 'user created'}, status.HTTP_201_CREATED)
-        return response.Response({'detail': 'invalid data format'}, status.HTTP_400_BAD_REQUEST)
+            user = serializer.instance
+
+            response_json = template_response('User created',
+                                              code=status.HTTP_201_CREATED,
+                                              message='User created successful',
+                                              data=UserSerializer(instance=user).data)
+            return response.Response(response_json, status.HTTP_201_CREATED)
+        response_json = template_response('Error',
+                                          code=status.HTTP_400_BAD_REQUEST,
+                                          message='User created successful',
+                                          data=serializer.errors)
+        return response.Response(
+            response_json, status.HTTP_400_BAD_REQUEST)
 

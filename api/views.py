@@ -7,6 +7,8 @@ from rest_framework import (
 )
 from rest_framework_jwt.authentication import BaseJSONWebTokenAuthentication
 
+from .permissions import IsAuthoredBy
+
 from .utils import template_response
 
 from .serializers import (
@@ -98,6 +100,11 @@ class EventCreateAPIView(generics.CreateAPIView, JWTAuth):
                 data=serializer.errors
             )
         return response.Response(response_json)
+
+
+class EventDetailAPIView(generics.RetrieveAPIView, JWTAuth):
+    serializer_class = EventSerializer
+    permission_classes = [IsAuthoredBy]
 
 
 

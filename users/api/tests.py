@@ -1,3 +1,4 @@
+from django.urls.base import reverse
 from freezegun import freeze_time
 from datetime import datetime, timedelta
 
@@ -11,7 +12,8 @@ from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_4
 class ApiTestCase(TestCase):
     JWT_KEY = 'JWT '
     AUTH_URL = '/auth/'
-    REGISTER_URL = '/register/'
+    REGISTER_URL = '/users/user/register/'
+    USER_PATH = '/users/user/{}/'
 
     def setUp(self):
         self.client = Client()
@@ -68,7 +70,7 @@ class ApiTestCase(TestCase):
         response = self._get_auth_response()
         token = response.data.get('token')
 
-        response = self.client.get('/{}/'.format(user_id), HTTP_AUTHORIZATION=self.JWT_KEY + token)
+        response = self.client.get(self.USER_PATH.format(user_id), HTTP_AUTHORIZATION=self.JWT_KEY + token)
 
         self.assertIn('username', response.data['data'])
 
@@ -80,7 +82,7 @@ class ApiTestCase(TestCase):
         response = self._get_auth_response()
         token = response.data['token']
 
-        response = self.client.get('/{}/'.format(user_id), HTTP_AUTHORIZATION=self.JWT_KEY + token + 'seed')
+        response = self.client.get(self.USER_PATH.format(user_id), HTTP_AUTHORIZATION=self.JWT_KEY + token + 'seed')
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
@@ -96,14 +98,6 @@ class ApiTestCase(TestCase):
 
         with freeze_time(now + timedelta(seconds=320)):
 
-            response = self.client.get('/{}/'.format(user_id), HTTP_AUTHORIZATION=self.JWT_KEY + token)
+            response = self.client.get(self.USER_PATH.format(user_id), HTTP_AUTHORIZATION=self.JWT_KEY + token)
 
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-
-
-
-
-
-
-
-

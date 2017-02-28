@@ -5,23 +5,13 @@ from rest_framework import (
     status,
     response
 )
-from rest_framework_jwt.authentication import BaseJSONWebTokenAuthentication
 
-from .permissions import IsAuthoredBy
-
-from .utils import template_response
-
-from .serializers import (
+from common.auth import JWTAuth
+from common.utils import template_response
+from users.api.serializers import (
     UserCreateSerializer,
-    UserSerializer,
-    EventSerializer,
-    EventCreateSerializer
+    UserSerializer
 )
-
-
-class JWTAuth(BaseJSONWebTokenAuthentication):
-    def get_jwt_value(self, request):
-        return request.QUERY_PARAMS.get('JWT')
 
 
 class UserDetailAPIView(generics.RetrieveAPIView, JWTAuth):
@@ -77,34 +67,6 @@ class UserCreateAPIView(generics.CreateAPIView):
         return response.Response(
             response_json, status.HTTP_400_BAD_REQUEST)
 
-
-class EventCreateAPIView(generics.CreateAPIView, JWTAuth):
-    serializer_class = EventCreateSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, *args, **kwargs):
-        serializer = self.serializer_class(data=self.request.data)
-        if serializer.is_valid(raise_exception=False):
-            obj = serializer.save(user=self.request.user)
-            response_json = template_response(
-                'Created',
-                 status.HTTP_201_CREATED,
-                 'Event created',
-                 EventSerializer(instance=obj).data
-            )
-        else:
-            response_json = template_response(
-                'Error',
-                status.HTTP_400_BAD_REQUEST,
-                message='Invalid data',
-                data=serializer.errors
-            )
-        return response.Response(response_json)
-
-
-class EventDetailAPIView(generics.RetrieveAPIView, JWTAuth):
-    serializer_class = EventSerializer
-    permission_classes = [IsAuthoredBy]
 
 
 

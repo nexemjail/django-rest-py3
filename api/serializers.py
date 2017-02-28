@@ -1,6 +1,8 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers, validators
 
+from .models import Event, EventLabel, EventMediaInfo
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -45,3 +47,33 @@ class UserCreateSerializer(serializers.ModelSerializer):
                                         first_name=validated_data['first_name'],
                                         last_name=validated_data['last_name'],
                                         password=validated_data['password'])
+
+
+class EventMediaSerializer(serializers.ModelSerializer):
+
+    media_url = serializers.URLField()
+
+    class Meta:
+        model = EventMediaInfo
+        fields = ('event_id', )
+
+
+class EventSerializer(serializers.ModelSerializer):
+
+    user = serializers.SerializerMethodField()
+
+    def get_user(self, obj):
+        return str(obj)
+
+    class Meta:
+        model = Event
+        fields = ('user', 'description', 'start', 'end', 'next_notification', 'period')
+
+
+class EventCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Event
+        fields = ('description', 'start', 'end', 'next_notification', 'period')
+
+

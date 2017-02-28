@@ -7,11 +7,15 @@ from rest_framework import (
 )
 from rest_framework_jwt.authentication import BaseJSONWebTokenAuthentication
 
+from .permissions import IsAuthoredBy
+
 from .utils import template_response
 
 from .serializers import (
     UserCreateSerializer,
-    UserSerializer
+    UserSerializer,
+    EventSerializer,
+    EventCreateSerializer
 )
 
 
@@ -63,13 +67,44 @@ class UserCreateAPIView(generics.CreateAPIView):
 
             response_json = template_response('User created',
                                               code=status.HTTP_201_CREATED,
-                                              message='User created successful',
+                                              message='User created successfully',
                                               data=UserSerializer(instance=user).data)
             return response.Response(response_json, status.HTTP_201_CREATED)
         response_json = template_response('Error',
                                           code=status.HTTP_400_BAD_REQUEST,
-                                          message='User created successful',
+                                          message='Error while creating a user',
                                           data=serializer.errors)
         return response.Response(
             response_json, status.HTTP_400_BAD_REQUEST)
+
+
+class EventCreateAPIView(generics.CreateAPIView, JWTAuth):
+    serializer_class = EventCreateSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, *args, **kwargs):
+        serializer = self.serializer_class(data=self.request.data)
+        if serializer.is_valid(raise_exception=False):
+            obj = serializer.save(user=self.request.user)
+            response_json = template_response(
+                'Created',
+                 status.HTTP_201_CREATED,
+                 'Event created',
+                 EventSerializer(instance=obj).data
+            )
+        else:
+            response_json = template_response(
+                'Error',
+                status.HTTP_400_BAD_REQUEST,
+                message='Invalid data',
+                data=serializer.errors
+            )
+        return response.Response(response_json)
+
+
+class EventDetailAPIView(generics.RetrieveAPIView, JWTAuth):
+    serializer_class = EventSerializer
+    permission_classes = [IsAuthoredBy]
+
+
 

@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_jwt',
-    'api.apps.ApiConfig',
+    'users.apps.UsersConfig',
+    'events.apps.EventsConfig',
 ]
 
 MIDDLEWARE = [
@@ -158,3 +159,6 @@ LOGGING = {
 }
 
 DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
+# TODO: fix this in a specific way :)
+JWT_VERIFY_EXPIRATION = False

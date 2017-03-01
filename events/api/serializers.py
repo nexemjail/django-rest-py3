@@ -39,7 +39,10 @@ class EventSerializer(serializers.ModelSerializer):
 
     user = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
-    labels = EventLabelSerializer(many=True)
+    labels = serializers.SerializerMethodField()
+
+    def get_labels(self, obj):
+        return Label.objects.filter(event_labels__event=obj).values_list('name', flat=True)
 
     def get_status(self, obj):
         return str(obj.status.status)

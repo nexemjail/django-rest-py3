@@ -22,8 +22,8 @@ from users.api import urls as api_urls
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^auth/$', ObtainJSONWebToken.as_view(), name='auth'),
-    url(r'^events/', include('events.urls')),
-    url(r'^users/', include('users.urls')),
+    url(r'^events/', include('events.urls', namespace='events')),
+    url(r'^users/', include('users.urls', namespace='users')),
     url(r'^', include(api_urls)),
 
 ]

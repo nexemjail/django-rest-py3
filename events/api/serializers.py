@@ -38,11 +38,14 @@ class EventLabelSerializer(serializers.ModelSerializer):
 class EventSerializer(serializers.ModelSerializer):
 
     user = serializers.SerializerMethodField()
-    status = EventStatusSerializer()
+    status = serializers.SerializerMethodField()
     labels = EventLabelSerializer(many=True)
 
+    def get_status(self, obj):
+        return str(obj.status.status)
+
     def get_user(self, obj):
-        return str(obj)
+        return str(obj.user)
 
     class Meta:
         model = Event

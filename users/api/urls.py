@@ -7,6 +7,6 @@ from .views import (
 )
 
 urlpatterns = [
-    url(r'^user/(?P<id>[0-9]+)/$', UserDetailAPIView.as_view(), name='detail'),
-    url(r'^user/register/$', UserCreateAPIView.as_view(), name='register'),
+    url(r'^user/(?P<id>[0-9]+)/$', UserDetailAPIView.as_view(), name='user_detail'),
+    url(r'^user/register/$', UserCreateAPIView.as_view(), name='user_register'),
 ]

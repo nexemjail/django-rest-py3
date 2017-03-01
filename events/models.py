@@ -33,6 +33,10 @@ class EventMedia(models.Model):
     media = models.FileField(null=True)
 
 
+class Label(models.Model):
+    name = models.CharField(max_length=100)
+
+
 class EventLabel(models.Model):
     event = models.ForeignKey(Event, related_name='labels')
-    label = models.CharField(max_length=100)
+    label = models.ForeignKey(Label, related_name='event_labels')

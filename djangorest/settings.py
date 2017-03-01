@@ -120,7 +120,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
-        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+        'common.auth.JWTAuth',
     ),
 }
 
@@ -183,7 +183,7 @@ JWT_AUTH = {
     'JWT_VERIFY': True,
     # TODO: fix this in a specific way :)
     # TODO: remove before testing!
-    'JWT_VERIFY_EXPIRATION': False,
+    'JWT_VERIFY_EXPIRATION': True,
     'JWT_LEEWAY': 0,
     'JWT_EXPIRATION_DELTA': datetime.timedelta(seconds=1800),
     'JWT_AUDIENCE': None,

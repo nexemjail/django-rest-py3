@@ -67,10 +67,10 @@ class ApiTestCase(TestCase):
 
         user_id = response.data.get('data').get('id')
 
-        response = self._get_auth_response()
-        token = response.data.get('token')
+        self._get_auth_response()
+        response.data.get('token')
 
-        response = self.client.get(self.USER_PATH.format(user_id), HTTP_AUTHORIZATION=self.JWT_KEY + token)
+        response = self.client.get(self.USER_PATH.format(user_id))
 
         self.assertIn('username', response.data['data'])
 
@@ -79,10 +79,10 @@ class ApiTestCase(TestCase):
 
         user_id = response.data.get('data').get('id')
 
-        response = self._get_auth_response()
-        token = response.data['token']
+        self._get_auth_response()
+        self.client.cookies['JWT'] = 'invalid cookie'
 
-        response = self.client.get(self.USER_PATH.format(user_id), HTTP_AUTHORIZATION=self.JWT_KEY + token + 'seed')
+        response = self.client.get(self.USER_PATH.format(user_id))
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
@@ -96,8 +96,8 @@ class ApiTestCase(TestCase):
         response = self._get_auth_response()
         token = response.data['token']
 
-        with freeze_time(now + timedelta(seconds=320)):
+        with freeze_time(now + timedelta(seconds=1810)):
 
-            response = self.client.get(self.USER_PATH.format(user_id), HTTP_AUTHORIZATION=self.JWT_KEY + token)
+            response = self.client.get(self.USER_PATH.format(user_id))
 
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)

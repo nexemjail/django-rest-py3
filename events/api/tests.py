@@ -1,5 +1,4 @@
 from django.urls.base import reverse
-from freezegun import freeze_time
 from datetime import datetime, timedelta
 
 from django.contrib.auth.models import User
@@ -32,6 +31,8 @@ class EventTests(TestCase):
           "status": "W"
         }
 
+        self.sample_payload_with_labels = dict(labels=["a", "b"], **self.sample_payload.copy())
+
         self.user_create_payload = {
             "email": "alex@gmail.com",
             "username": "alex@gmail.com",
@@ -47,15 +48,22 @@ class EventTests(TestCase):
         }
 
     def tearDown(self):
-        user = User.objects.filter(username=self.user_login_payload['username']).first()
-        events = Event.objects.filter(user=user)
+        users = User.objects.all()
+        events = Event.objects.filter(user__in=users)
         Label.objects.filter(events=events).delete()
         events.delete()
-        user.delete()
+        users.delete()
 
-    def auth(self):
-        self.client.post(reverse('users:user_register'), self.user_create_payload)
-        self.client.post(reverse('auth'), self.user_login_payload)
+    def auth(self, username=None):
+        create_payload = self.user_create_payload.copy()
+        login_payload = self.user_login_payload.copy()
+
+        if username:
+            for payload in [create_payload, login_payload]:
+                payload['username'] = username
+
+        self.client.post(reverse('users:user_register'), create_payload)
+        self.client.post(reverse('auth'), login_payload)
 
     def test_create_event(self):
         self.auth()
@@ -83,7 +91,17 @@ class EventTests(TestCase):
 
         self.assertEquals(Label.objects.filter(name__in=labels).count(), len(labels))
 
+    def test_privacy(self):
+        self.auth()
+        self.client.post(reverse('events:event_create'), self.sample_payload_with_labels)
 
+        response = self.client.get(reverse('events:event_list'))
 
+        first_user_data = response.json()['data']
 
+        self.auth(username='alex1@gmail.com')
+
+        response = self.client.get(reverse('events:event_list'))
+
+        self.assertNotEqual(len(response.json()['data']), first_user_data)
 

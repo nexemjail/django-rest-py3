@@ -45,6 +45,13 @@ class EventDetailAPIView(generics.RetrieveAPIView, JWTAuth):
         return super(EventDetailAPIView, self).retrieve(request, *args, **kwargs)
 
 
+class EventUpdateAPIView(generics.UpdateAPIView, JWTAuth):
+
+    @refresh_jwt
+    def update(self, request, *args, **kwargs):
+        pass
+
+
 class EventListAPIView(generics.ListAPIView, JWTAuth):
     serializer_class = EventSerializer
     permission_classes = [IsAuthoredBy]
@@ -53,7 +60,10 @@ class EventListAPIView(generics.ListAPIView, JWTAuth):
 
     @refresh_jwt
     def list(self, request, *args, **kwargs):
-        return super(EventListAPIView, self).list(request, *args, **kwargs)
+        response = super(EventListAPIView, self).list(request, *args, **kwargs)
+        response.data = template_response(status=response.status_text, code=response.status_code,
+                                          message="", data=response.data)
+        return response
 
     def get_queryset(self):
         return Event.objects.filter(user=self.request.user).select_related('status').prefetch_related('labels')

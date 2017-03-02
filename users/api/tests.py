@@ -29,86 +29,95 @@ class ApiTestCase(TestCase):
         }
 
     def tearDown(self):
-        User.objects.filter(username=self.sample_user_payload['username']).delete()
+        User.objects.all().delete()
 
-    def _get_auth_response(self):
-        return self.client.post(self.AUTH_URL, {
-            'username': self.sample_user_payload['username'],
-            'password': self.sample_user_payload['password']
+    def authenticate(self, username=None):
+        payload = self.sample_user_payload.copy()
+        if username:
+            payload['username'] = username
+
+        return self.client.post(reverse('auth'), {
+            'username': payload['username'],
+            'password': payload['password']
         })
 
+    def register(self, username=None, password=None):
+        payload = self.sample_user_payload.copy()
+        if username:
+            payload['username'] = username
+        if password:
+            payload['password'] = password
+
+        return self.client.post(reverse('users:user_register'),  payload)
+
+    def get_user(self, user_created_response):
+        response = self.client.get(
+            reverse('users:user_detail', kwargs=dict(id=user_created_response.data['data']['id']))
+        )
+        return response
+
     def test_registration(self):
-        response = self.client.post(self.REGISTER_URL,  self.sample_user_payload)
+        response = self.register()
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     def test_already_exists(self):
-        self.client.post(self.REGISTER_URL,  self.sample_user_payload)
-
-        response = self.client.post(self.REGISTER_URL, self.sample_user_payload)
+        self.register()
+        response = self.register()
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
     def test_obtain_token(self):
-        self.client.post(self.REGISTER_URL, self.sample_user_payload)
-        response = self._get_auth_response()
+        self.register()
+        response = self.authenticate()
 
         self.assertTrue(bool(response.data.get('token')), True)
 
     def test_obtain_token_error(self):
-        payload = self.sample_user_payload.copy()
-        payload['username'] = 'seed'
+        self.register(username='seed')
+        response = self.authenticate()
 
-        self.client.post(self.REGISTER_URL, payload)
-        response = self._get_auth_response()
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
     def test_get_info(self):
-        response = self.client.post(self.REGISTER_URL, self.sample_user_payload)
+        response = self.register()
+        self.authenticate()
 
-        user_id = response.data.get('data').get('id')
-
-        self._get_auth_response()
-        response.data.get('token')
-
-        response = self.client.get(self.USER_PATH.format(user_id))
+        response = self.get_user(response)
 
         self.assertIn('username', response.data['data'])
 
     def test_invalid_token(self):
-        response = self.client.post(self.REGISTER_URL, self.sample_user_payload)
+        response = self.register()
 
-        user_id = response.data.get('data').get('id')
-
-        self._get_auth_response()
+        self.authenticate()
         self.client.cookies['JWT'] = 'invalid cookie'
 
-        response = self.client.get(self.USER_PATH.format(user_id))
+        response = self.get_user(response)
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_expiration(self):
 
         now = datetime.now()
-        response = self.client.post(self.REGISTER_URL, self.sample_user_payload)
+        response = self.register()
 
-        user_id = response.data.get('data').get('id')
-
-        self._get_auth_response()
+        self.authenticate()
 
         with freeze_time(now + timedelta(seconds=1810)):
 
-            response = self.client.get(self.USER_PATH.format(user_id))
+            response = self.get_user(response)
 
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_update_token(self):
-        response = self.client.post(self.REGISTER_URL, self.sample_user_payload)
-        user_id = response.data.get('data').get('id')
+        response_registration = self.register()
 
-        response = self._get_auth_response()
+        response = self.authenticate()
         cookie = response.cookies.get(JWT_KEY)
 
-        response = self.client.get(self.USER_PATH.format(user_id))
+        # somehow signature is the same if executed fast enough
+        with freeze_time(datetime.now() + timedelta(seconds=10)):
+            response = self.get_user(response_registration)
 
-        self.assertNotEqual(response.cookies.get(JWT_KEY), cookie)
+            self.assertNotEqual(response.cookies.get(JWT_KEY).value, cookie.value)

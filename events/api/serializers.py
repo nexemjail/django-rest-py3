@@ -70,9 +70,7 @@ class EventCreateSerializer(serializers.ModelSerializer):
                 all_labels = Label.objects.filter(name__in=label_list)
             validated_data['labels'] = all_labels.values_list('id', flat=True)
 
-        event = super(EventCreateSerializer, self).create(validated_data)
-
-        return event
+        return super(EventCreateSerializer, self).create(validated_data)
 
     class Meta:
         model = Event

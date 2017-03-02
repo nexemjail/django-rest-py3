@@ -1,16 +1,13 @@
-from rest_framework import serializers, validators
+from rest_framework import serializers
 
 from events.models import Label
 from ..models import Event, EventStatus, EventMedia, EVENT_CREATE_CHOICES
 
 
 class EventMediaSerializer(serializers.ModelSerializer):
-
-    media_url = serializers.URLField()
-
     class Meta:
         model = EventMedia
-        fields = ('event_id', )
+        fields = ('media', )
 
 
 class EventStatusSerializer(serializers.ModelSerializer):
@@ -31,9 +28,7 @@ class EventSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     labels = LabelSerializer(many=True)
-
-    # def get_labels(self, obj):
-    #     return Label.objects.filter(events=obj).values_list('name')
+    media = EventMediaSerializer(many=True)
 
     def get_status(self, obj):
         return str(obj.status.status)
@@ -43,13 +38,15 @@ class EventSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Event
-        fields = ('user', 'description', 'start', 'end', 'next_notification', 'period', 'periodic', 'status', 'labels')
+        fields = ('user', 'description', 'start', 'end', 'next_notification', 'period',
+                  'periodic', 'status', 'labels', 'media')
 
 
 class EventCreateSerializer(serializers.ModelSerializer):
 
     status = serializers.ChoiceField(choices=EVENT_CREATE_CHOICES)
     labels = serializers.ListField()
+    media = serializers.FileField(required=False)
 
     def validate(self, attrs):
         status = attrs.get('status')
@@ -58,6 +55,7 @@ class EventCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         label_list = validated_data.pop('labels')
+        media = validated_data.pop('media')
 
         if label_list:
             existing_labels = Label.objects.filter(name__in=label_list)
@@ -70,8 +68,12 @@ class EventCreateSerializer(serializers.ModelSerializer):
                 all_labels = Label.objects.filter(name__in=label_list)
             validated_data['labels'] = all_labels.values_list('id', flat=True)
 
-        return super(EventCreateSerializer, self).create(validated_data)
+        event = super(EventCreateSerializer, self).create(validated_data)
+
+        if media:
+            EventMedia.objects.create(media=media, event=event)
+        return event
 
     class Meta:
         model = Event
-        fields = ('description', 'start', 'end', 'next_notification', 'period', 'status', 'labels')
+        fields = ('description', 'start', 'end', 'next_notification', 'period', 'status', 'labels', 'media')

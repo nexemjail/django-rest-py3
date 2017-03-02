@@ -2,10 +2,11 @@ from rest_framework import generics, response, status, permissions
 
 from django_filters.rest_framework import DjangoFilterBackend
 from common.auth import JWTAuth, refresh_jwt
-from common.permissions import IsAuthoredBy
+from common.permissions import IsAuthoredBy, IsMediaAuthoredBy
 from common.utils import template_response
+from events.models import EventMedia
 
-from .serializers import EventCreateSerializer, EventSerializer
+from .serializers import EventCreateSerializer, EventSerializer, EventMediaSerializer
 from ..models import Event
 from .filters import EventListFilter
 
@@ -50,6 +51,18 @@ class EventUpdateAPIView(generics.UpdateAPIView, JWTAuth):
     @refresh_jwt
     def update(self, request, *args, **kwargs):
         pass
+
+
+class EventMediaDetailAPIView(generics.RetrieveAPIView, JWTAuth):
+    serializer_class = EventMediaSerializer
+    permission_classes = [IsMediaAuthoredBy]
+    queryset = EventMedia.objects.all()
+
+    @refresh_jwt
+    def retrieve(self, request, *args, **kwargs):
+        response = super(EventMediaDetailAPIView, self).retrieve(request, *args, **kwargs)
+        response.data = template_response(code=response.status_code, data=response.data, )
+        return response
 
 
 class EventListAPIView(generics.ListAPIView, JWTAuth):

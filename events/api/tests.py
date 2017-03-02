@@ -9,7 +9,7 @@ from django.test import Client
 from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
 
 from events.models import Label
-from ..models import EventLabel, Event, EventStatus, EventMedia, EVENT_STATUSES
+from ..models import Event, EventStatus, EventMedia, EVENT_STATUSES
 
 
 def dict_contains(parent, child):
@@ -45,6 +45,13 @@ class EventTests(TestCase):
           "username": "alex@gmail.com",
           "password": "password"
         }
+
+    def tearDown(self):
+        user = User.objects.filter(username=self.user_login_payload['username']).first()
+        events = Event.objects.filter(user=user)
+        Label.objects.filter(events=events).delete()
+        events.delete()
+        user.delete()
 
     def auth(self):
         self.client.post(reverse('users:user_register'), self.user_create_payload)

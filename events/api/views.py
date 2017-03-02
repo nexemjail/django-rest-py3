@@ -1,7 +1,7 @@
 from rest_framework import generics, response, status, permissions
 
 from django_filters.rest_framework import DjangoFilterBackend
-from common.auth import JWTAuth
+from common.auth import JWTAuth, refresh_jwt
 from common.permissions import IsAuthoredBy
 from common.utils import template_response
 
@@ -14,6 +14,7 @@ class EventCreateAPIView(generics.CreateAPIView, JWTAuth):
     serializer_class = EventCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    @refresh_jwt
     def post(self, *args, **kwargs):
         serializer = self.serializer_class(data=self.request.data)
         if serializer.is_valid(raise_exception=False):
@@ -39,6 +40,10 @@ class EventDetailAPIView(generics.RetrieveAPIView, JWTAuth):
     permission_classes = [IsAuthoredBy]
     queryset = Event
 
+    @refresh_jwt
+    def retrieve(self, request, *args, **kwargs):
+        return super(EventDetailAPIView, self).retrieve(request, *args, **kwargs)
+
 
 class EventListAPIView(generics.ListAPIView, JWTAuth):
     serializer_class = EventSerializer
@@ -46,5 +51,9 @@ class EventListAPIView(generics.ListAPIView, JWTAuth):
     filter_backends = [DjangoFilterBackend]
     filter_class = EventListFilter
 
+    @refresh_jwt
+    def list(self, request, *args, **kwargs):
+        return super(EventListAPIView, self).list(request, *args, **kwargs)
+
     def get_queryset(self):
-        return Event.objects.filter(user=self.request.user)
+        return Event.objects.filter(user=self.request.user).select_related('status').prefetch_related('labels')

@@ -6,7 +6,7 @@ from rest_framework import (
     response
 )
 
-from common.auth import JWTAuth
+from common.auth import JWTAuth, refresh_jwt
 from common.utils import template_response
 from users.api.serializers import (
     UserCreateSerializer,
@@ -27,6 +27,7 @@ class UserDetailAPIView(generics.RetrieveAPIView, JWTAuth):
         except User.DoesNotExist:
             return None
 
+    @refresh_jwt
     def get(self, request, *args, **kwargs):
         user = self.get_object()
         if user:

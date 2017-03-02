@@ -17,6 +17,10 @@ class EventStatus(models.Model):
     status = models.CharField(max_length=1, choices=EVENT_CHOICES)
 
 
+class Label(models.Model):
+    name = models.CharField(max_length=100)
+
+
 class Event(models.Model):
     user = models.ForeignKey(User, related_name='events')
     description = models.TextField('Event description', null=True)
@@ -26,6 +30,7 @@ class Event(models.Model):
     period = models.DateTimeField(null=True)
     next_notification = models.DateTimeField(null=True)
     status = models.ForeignKey(EventStatus)
+    labels = models.ManyToManyField(Label, 'events')
 
 
 class EventMedia(models.Model):
@@ -33,10 +38,4 @@ class EventMedia(models.Model):
     media = models.FileField(null=True)
 
 
-class Label(models.Model):
-    name = models.CharField(max_length=100)
 
-
-class EventLabel(models.Model):
-    event = models.ForeignKey(Event, related_name='labels')
-    label = models.ForeignKey(Label, related_name='event_labels')

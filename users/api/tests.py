@@ -8,9 +8,10 @@ from django.test import TestCase
 from django.test import Client
 from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
 
+from common.auth import JWT_KEY
+
 
 class ApiTestCase(TestCase):
-    JWT_KEY = 'JWT '
     AUTH_URL = '/auth/'
     REGISTER_URL = '/users/user/register/'
     USER_PATH = '/users/user/{}/'
@@ -93,11 +94,21 @@ class ApiTestCase(TestCase):
 
         user_id = response.data.get('data').get('id')
 
-        response = self._get_auth_response()
-        token = response.data['token']
+        self._get_auth_response()
 
         with freeze_time(now + timedelta(seconds=1810)):
 
             response = self.client.get(self.USER_PATH.format(user_id))
 
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+    def test_update_token(self):
+        response = self.client.post(self.REGISTER_URL, self.sample_user_payload)
+        user_id = response.data.get('data').get('id')
+
+        response = self._get_auth_response()
+        cookie = response.cookies.get(JWT_KEY)
+
+        response = self.client.get(self.USER_PATH.format(user_id))
+
+        self.assertNotEqual(response.cookies.get(JWT_KEY), cookie)

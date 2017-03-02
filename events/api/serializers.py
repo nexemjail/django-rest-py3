@@ -1,7 +1,7 @@
 from rest_framework import serializers, validators
 
 from events.models import Label
-from ..models import Event, EventStatus, EventLabel, EventMedia, EVENT_CREATE_CHOICES
+from ..models import Event, EventStatus, EventMedia, EVENT_CREATE_CHOICES
 
 
 class EventMediaSerializer(serializers.ModelSerializer):
@@ -26,23 +26,14 @@ class LabelSerializer(serializers.ModelSerializer):
         fields = ('name', )
 
 
-class EventLabelSerializer(serializers.ModelSerializer):
-
-    label = LabelSerializer()
-
-    class Meta:
-        model = EventLabel
-        fields = ('label', )
-
-
 class EventSerializer(serializers.ModelSerializer):
 
     user = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
-    labels = serializers.SerializerMethodField()
+    labels = LabelSerializer(many=True)
 
-    def get_labels(self, obj):
-        return Label.objects.filter(event_labels__event=obj).values_list('name', flat=True)
+    # def get_labels(self, obj):
+    #     return Label.objects.filter(events=obj).values_list('name')
 
     def get_status(self, obj):
         return str(obj.status.status)
@@ -67,17 +58,19 @@ class EventCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         label_list = validated_data.pop('labels')
-        event = super(EventCreateSerializer, self).create(validated_data)
 
         if label_list:
             existing_labels = Label.objects.filter(name__in=label_list)
             labels_to_create = set(label_list) - set(existing_labels.values_list('name', flat=True))
 
-            new_labels = Label.objects.bulk_create((Label(name=l) for l in labels_to_create))
+            all_labels = existing_labels
+            if labels_to_create:
+                Label.objects.bulk_create((Label(name=l) for l in labels_to_create))
 
-            all_labels = [EventLabel(label=l, event=event) for l in new_labels] + \
-                         [EventLabel(label=l, event=event) for l in existing_labels]
-            EventLabel.objects.bulk_create(all_labels)
+                all_labels = Label.objects.filter(name__in=label_list)
+            validated_data['labels'] = all_labels.values_list('id', flat=True)
+
+        event = super(EventCreateSerializer, self).create(validated_data)
 
         return event
 

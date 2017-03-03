@@ -116,4 +116,3 @@ class EventTests(TestCase):
         event_id = response.data['data']['id']
 
         self.assertEquals(EventMedia.objects.first().event_id, event_id)
-    

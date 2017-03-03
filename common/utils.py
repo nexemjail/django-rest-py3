@@ -5,7 +5,3 @@ def template_response(status=None, code=None, message=None, data=None):
         'message': message,
         'data': data
     }
-
-
-def detail_template(value):
-    return {'detail': str(value)}

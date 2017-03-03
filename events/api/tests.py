@@ -1,3 +1,5 @@
+import json
+
 from django.urls.base import reverse
 from datetime import datetime, timedelta
 
@@ -105,3 +107,13 @@ class EventTests(TestCase):
 
         self.assertNotEqual(len(response.json()['data']), first_user_data)
 
+    def test_send_file(self):
+        self.auth()
+        payload = self.sample_payload_with_labels.copy()
+        payload['media'] = open('img.jpg', 'rb')
+        response = self.client.post(reverse('events:event_create'), payload)
+
+        event_id = response.data['data']['id']
+
+        self.assertEquals(EventMedia.objects.first().event_id, event_id)
+    

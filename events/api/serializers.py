@@ -1,3 +1,5 @@
+import os
+from django.conf import settings
 from rest_framework import serializers
 
 from events.models import Label
@@ -38,7 +40,7 @@ class EventSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Event
-        fields = ('user', 'description', 'start', 'end', 'next_notification', 'period',
+        fields = ('id', 'user', 'description', 'start', 'end', 'next_notification', 'period',
                   'periodic', 'status', 'labels', 'media')
 
 
@@ -54,8 +56,8 @@ class EventCreateSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        label_list = validated_data.pop('labels')
-        media = validated_data.pop('media')
+        label_list = validated_data.pop('labels', None)
+        media = validated_data.pop('media', None)
 
         if label_list:
             existing_labels = Label.objects.filter(name__in=label_list)

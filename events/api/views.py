@@ -24,7 +24,7 @@ class EventCreateAPIView(generics.CreateAPIView, JWTAuth):
                 'Created',
                  status.HTTP_201_CREATED,
                  'Event created',
-                 EventSerializer(instance=obj).data
+                 EventSerializer(instance=obj, context=dict(request=self.request)).data
             )
         else:
             response_json = template_response(
@@ -79,4 +79,4 @@ class EventListAPIView(generics.ListAPIView, JWTAuth):
         return response
 
     def get_queryset(self):
-        return Event.objects.filter(user=self.request.user).select_related('status').prefetch_related('labels')
+        return Event.objects.filter(user=self.request.user).select_related('status').prefetch_related('labels', 'media')

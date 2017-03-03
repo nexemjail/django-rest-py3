@@ -29,6 +29,7 @@ class Event(models.Model):
     periodic = models.BooleanField(default=False)
     period = models.DateTimeField(null=True)
     next_notification = models.DateTimeField(null=True)
+    place = models.CharField(max_length=500, null=True)
     status = models.ForeignKey(EventStatus)
     labels = models.ManyToManyField(Label, 'events')
 

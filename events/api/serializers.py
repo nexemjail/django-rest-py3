@@ -4,6 +4,21 @@ from events.models import Label
 from ..models import Event, EventStatus, EventMedia, EVENT_CREATE_CHOICES
 
 
+def validate_period(attrs, instance=None):
+
+    period = attrs.get('period')
+    periodic = attrs.get('periodic')
+
+    if instance:
+        period = period or instance.period
+        periodic = periodic or instance.periodic
+
+    if (period and periodic) or (not period and periodic):
+        return attrs
+    raise serializers.ValidationError(dict(period='Period and periodic flag must match!'
+                                                  ' (Periodic -> period is not null)'))
+
+
 class EventMediaSerializer(serializers.ModelSerializer):
     class Meta:
         model = EventMedia
@@ -36,10 +51,30 @@ class EventSerializer(serializers.ModelSerializer):
     def get_user(self, obj):
         return str(obj.user)
 
+    def validate(self, attrs):
+        return validate_period(attrs, self.instance)
+
+    def update(self, instance, validated_data):
+        # TODO: handle media and labels
+        media = validated_data.pop('media', None)
+        labels = validated_data.pop('labels', None)
+
+        instance.description = validated_data.get('description', instance.description)
+        instance.start = validated_data.get('start', instance.start)
+        instance.end = validated_data.get('start', instance.end)
+        instance.next_notification = validated_data.get('next_notification', instance.next_notification)
+        instance.status = validated_data.get('status', instance.status)
+        instance.periodic = validated_data.get('periodic', instance.periodic)
+        instance.period = validated_data.get('period', instance.period)
+        instance.place = validated_data.get('place', instance.place)
+        instance.save()
+
+        return instance
+
     class Meta:
         model = Event
         fields = ('id', 'user', 'description', 'start', 'end', 'next_notification', 'period',
-                  'periodic', 'status', 'labels', 'media')
+                  'periodic', 'status', 'place', 'labels', 'media')
 
 
 class EventCreateSerializer(serializers.ModelSerializer):
@@ -51,7 +86,8 @@ class EventCreateSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         status = attrs.get('status')
         attrs['status'] = EventStatus.objects.filter(status=status).first()
-        return attrs
+
+        return validate_period(attrs)
 
     def create(self, validated_data):
         label_list = validated_data.pop('labels', None)
@@ -76,4 +112,5 @@ class EventCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Event
-        fields = ('description', 'start', 'end', 'next_notification', 'period', 'status', 'labels', 'media')
+        fields = ('description', 'start', 'end', 'next_notification', 'period',
+                  'periodic', 'status', 'labels', 'media')

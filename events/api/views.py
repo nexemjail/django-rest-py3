@@ -36,7 +36,7 @@ class EventCreateAPIView(generics.CreateAPIView, JWTAuth):
         return response.Response(response_json)
 
 
-class EventDetailAPIView(generics.RetrieveAPIView, JWTAuth):
+class EventDetailAPIView(generics.RetrieveUpdateAPIView, JWTAuth):
     serializer_class = EventSerializer
     permission_classes = [IsAuthoredBy]
     queryset = Event
@@ -45,12 +45,9 @@ class EventDetailAPIView(generics.RetrieveAPIView, JWTAuth):
     def retrieve(self, request, *args, **kwargs):
         return super(EventDetailAPIView, self).retrieve(request, *args, **kwargs)
 
-
-class EventUpdateAPIView(generics.UpdateAPIView, JWTAuth):
-
     @refresh_jwt
     def update(self, request, *args, **kwargs):
-        pass
+        return super(EventDetailAPIView, self).update(request, *args, **kwargs, partial=True)
 
 
 class EventMediaDetailAPIView(generics.RetrieveAPIView, JWTAuth):

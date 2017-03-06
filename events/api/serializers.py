@@ -1,6 +1,10 @@
+from datetime import timedelta
+
+from dateutil.relativedelta import relativedelta
+
 from rest_framework import serializers
 
-from events.models import Label
+from events.models import Label, EVENT_CHOICES, EVENT_STATUSES
 from ..models import Event, EventStatus, EventMedia, EVENT_CREATE_CHOICES
 
 
@@ -13,8 +17,9 @@ def validate_period(attrs, instance=None):
         period = period or instance.period
         periodic = periodic or instance.periodic
 
-    if (period and periodic) or (not period and periodic):
+    if (period and periodic) or (not period and not periodic):
         return attrs
+
     raise serializers.ValidationError(dict(period='Period and periodic flag must match!'
                                                   ' (Periodic -> period is not null)'))
 
@@ -26,6 +31,9 @@ class EventMediaSerializer(serializers.ModelSerializer):
 
 
 class EventStatusSerializer(serializers.ModelSerializer):
+
+    def create(self, validated_data):
+        return EventStatus.objects.create(validated_data['status'])
 
     class Meta:
         model = EventStatus
@@ -41,12 +49,14 @@ class LabelSerializer(serializers.ModelSerializer):
 class EventSerializer(serializers.ModelSerializer):
 
     user = serializers.SerializerMethodField()
-    status = serializers.SerializerMethodField()
-    labels = LabelSerializer(many=True)
-    media = EventMediaSerializer(many=True)
+    status = serializers.ChoiceField(choices=EVENT_CHOICES, source='status.status')
+    labels = LabelSerializer(many=True, required=False)
+    media = EventMediaSerializer(many=True, required=False)
 
-    def get_status(self, obj):
-        return str(obj.status.status)
+    def validate_status(self, status):
+        if EventStatus.objects.filter(status=status).first():
+            return status
+        raise serializers.ValidationError('Invalid "status"')
 
     def get_user(self, obj):
         return str(obj.user)
@@ -57,13 +67,21 @@ class EventSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         # TODO: handle media and labels
         media = validated_data.pop('media', None)
+
         labels = validated_data.pop('labels', None)
+        if labels is None:
+            instance.labels = None
+        else:
+            instance.labels = Label.create_all(list(map(lambda x: x['name'], labels)))
 
         instance.description = validated_data.get('description', instance.description)
         instance.start = validated_data.get('start', instance.start)
         instance.end = validated_data.get('start', instance.end)
         instance.next_notification = validated_data.get('next_notification', instance.next_notification)
-        instance.status = validated_data.get('status', instance.status)
+
+        status = validated_data.get('status')
+        instance.status = EventStatus.objects.filter(status=status.get('status')).first() if status else instance.status
+
         instance.periodic = validated_data.get('periodic', instance.periodic)
         instance.period = validated_data.get('period', instance.period)
         instance.place = validated_data.get('place', instance.place)
@@ -81,12 +99,17 @@ class EventCreateSerializer(serializers.ModelSerializer):
 
     status = serializers.ChoiceField(choices=EVENT_CREATE_CHOICES)
     labels = serializers.ListField()
+    period = serializers.DurationField(default=None, required=False, allow_null=True)
     media = serializers.FileField(required=False)
 
-    def validate(self, attrs):
-        status = attrs.get('status')
-        attrs['status'] = EventStatus.objects.filter(status=status).first()
+    def validate_period(self, period):
+        period = period
+        return period
 
+    def validate_status(self, attr):
+        return EventStatus.objects.filter(status=attr).first()
+
+    def validate(self, attrs):
         return validate_period(attrs)
 
     def create(self, validated_data):
@@ -104,6 +127,9 @@ class EventCreateSerializer(serializers.ModelSerializer):
                 all_labels = Label.objects.filter(name__in=label_list)
             validated_data['labels'] = all_labels.values_list('id', flat=True)
 
+        if 'next_notification' not in validated_data:
+            validated_data['next_notification'] = validated_data['start'] - timedelta(minutes=5)
+
         event = super(EventCreateSerializer, self).create(validated_data)
 
         if media:
@@ -112,5 +138,5 @@ class EventCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Event
-        fields = ('description', 'start', 'end', 'next_notification', 'period',
+        fields = ('id', 'description', 'start', 'end', 'next_notification', 'period',
                   'periodic', 'status', 'labels', 'media')

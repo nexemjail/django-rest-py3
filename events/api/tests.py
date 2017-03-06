@@ -116,3 +116,30 @@ class EventTests(TestCase):
         event_id = response.data['data']['id']
 
         self.assertEquals(EventMedia.objects.first().event_id, event_id)
+
+    def test_event_update(self):
+        self.auth()
+        payload = self.sample_payload.copy()
+
+        response = self.client.post(reverse('events:event_create'), payload)
+
+        event_id = response.data['data']['id']
+
+        payload["description"] = "new_description"
+        payload["periodic"] = True
+        payload["period"] = payload["start"]
+        payload["end"] = payload["start"]
+        payload["status"] = "C"
+        payload["place"] = "place"
+
+        encode_request = bytes(json.dumps(payload), encoding='utf-8')
+
+        response = self.client.put(reverse('events:event_update', args=(event_id,)), data=encode_request,
+                                   content_type="application/json")
+        print(response)
+
+        response = self.client.get(reverse('events:event_detail', args=(event_id,)))
+
+        self.assertTrue(dict_contains(response.data['data'], payload))
+
+

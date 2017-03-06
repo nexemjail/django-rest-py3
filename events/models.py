@@ -20,6 +20,18 @@ class EventStatus(models.Model):
 class Label(models.Model):
     name = models.CharField(max_length=100)
 
+    @classmethod
+    def create_non_existing(cls, labels_list):
+        existing_labels = Label.objects.filter(name__in=labels_list).values_list('name', flat=True)
+        not_existing_labels = set(labels_list) - set(existing_labels)
+
+        Label.objects.bulk_create((Label(name=name) for name in not_existing_labels))
+
+    @classmethod
+    def create_all(cls, label_list):
+        Label.create_non_existing(label_list)
+        return Label.objects.filter(name__in=label_list)
+
 
 class Event(models.Model):
     user = models.ForeignKey(User, related_name='events')
@@ -27,7 +39,7 @@ class Event(models.Model):
     start = models.DateTimeField(null=False)
     end = models.DateTimeField(null=True)
     periodic = models.BooleanField(default=False)
-    period = models.DateTimeField(null=True)
+    period = models.DurationField(null=True)
     next_notification = models.DateTimeField(null=True)
     place = models.CharField(max_length=500, null=True)
     status = models.ForeignKey(EventStatus)

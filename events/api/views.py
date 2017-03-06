@@ -43,11 +43,16 @@ class EventDetailAPIView(generics.RetrieveUpdateAPIView, JWTAuth):
 
     @refresh_jwt
     def retrieve(self, request, *args, **kwargs):
-        return super(EventDetailAPIView, self).retrieve(request, *args, **kwargs)
+        response = super(EventDetailAPIView, self).retrieve(request, *args, **kwargs)
+        response.data = template_response(code=response.status_code, data=response.data)
+        return response
+
 
     @refresh_jwt
-    def update(self, request, *args, **kwargs):
-        return super(EventDetailAPIView, self).update(request, *args, **kwargs, partial=True)
+    def patch(self, request, *args, **kwargs):
+        response = super(EventDetailAPIView, self).patch(request, *args, **kwargs)
+        response.data = template_response(code=response.status_code, data=response.data)
+        return response
 
 
 class EventMediaDetailAPIView(generics.RetrieveAPIView, JWTAuth):
@@ -58,7 +63,7 @@ class EventMediaDetailAPIView(generics.RetrieveAPIView, JWTAuth):
     @refresh_jwt
     def retrieve(self, request, *args, **kwargs):
         response = super(EventMediaDetailAPIView, self).retrieve(request, *args, **kwargs)
-        response.data = template_response(code=response.status_code, data=response.data, )
+        response.data = template_response(code=response.status_code, data=response.data)
         return response
 
 

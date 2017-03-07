@@ -33,24 +33,25 @@ class EventCreateAPIView(generics.CreateAPIView, JWTAuth):
                 message='Invalid data',
                 data=serializer.errors
             )
-        return response.Response(response_json)
+        return response.Response(response_json, status=response_json['code'])
 
 
-class EventDetailAPIView(generics.RetrieveAPIView, JWTAuth):
+class EventDetailAPIView(generics.RetrieveUpdateAPIView, JWTAuth):
     serializer_class = EventSerializer
     permission_classes = [IsAuthoredBy]
     queryset = Event
 
     @refresh_jwt
     def retrieve(self, request, *args, **kwargs):
-        return super(EventDetailAPIView, self).retrieve(request, *args, **kwargs)
-
-
-class EventUpdateAPIView(generics.UpdateAPIView, JWTAuth):
+        response = super(EventDetailAPIView, self).retrieve(request, *args, **kwargs)
+        response.data = template_response(code=response.status_code, data=response.data)
+        return response
 
     @refresh_jwt
-    def update(self, request, *args, **kwargs):
-        pass
+    def patch(self, request, *args, **kwargs):
+        response = super(EventDetailAPIView, self).patch(request, *args, **kwargs)
+        response.data = template_response(code=response.status_code, data=response.data)
+        return response
 
 
 class EventMediaDetailAPIView(generics.RetrieveAPIView, JWTAuth):
@@ -61,7 +62,7 @@ class EventMediaDetailAPIView(generics.RetrieveAPIView, JWTAuth):
     @refresh_jwt
     def retrieve(self, request, *args, **kwargs):
         response = super(EventMediaDetailAPIView, self).retrieve(request, *args, **kwargs)
-        response.data = template_response(code=response.status_code, data=response.data, )
+        response.data = template_response(code=response.status_code, data=response.data)
         return response
 
 

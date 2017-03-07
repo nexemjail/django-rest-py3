@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 
 from django.test import Client
-from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
+from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
 from events.models import Label
 from ..models import Event, EventStatus, EventMedia, EVENT_STATUSES
@@ -15,7 +15,7 @@ from ..models import Event, EventStatus, EventMedia, EVENT_STATUSES
 
 def dict_contains(parent, child):
     for key in child:
-        if not child[key] == parent[key]:
+        if child[key] != parent[key]:
             return False
     return True
 
@@ -66,6 +66,11 @@ class EventTests(TestCase):
 
         self.client.post(reverse('users:user_register'), create_payload)
         self.client.post(reverse('auth'), login_payload)
+
+    @staticmethod
+    def reformat_date(datum):
+        return datetime.strptime(datum, '%Y-%m-%d %H:%M:%S')\
+            .strftime('%Y-%m-%dT%H:%M:%SZ')
 
     def test_create_event(self):
         self.auth()
@@ -127,19 +132,72 @@ class EventTests(TestCase):
 
         payload["description"] = "new_description"
         payload["periodic"] = True
-        payload["period"] = payload["start"]
+        payload["period"] = "30 00:00:00"
         payload["end"] = payload["start"]
         payload["status"] = "C"
         payload["place"] = "place"
 
-        encode_request = bytes(json.dumps(payload), encoding='utf-8')
+        encoded_request = bytes(json.dumps(payload), encoding='utf-8')
 
-        response = self.client.put(reverse('events:event_update', args=(event_id,)), data=encode_request,
-                                   content_type="application/json")
-        print(response)
+        self.client.patch(reverse('events:event_update', args=(event_id,)),
+                          data=encoded_request, content_type="application/json")
 
         response = self.client.get(reverse('events:event_detail', args=(event_id,)))
+        payload['start'], payload['end'] = list(map(self.reformat_date,
+                                                    (payload['start'], payload['end'])
+                                                    )
+                                                )
 
         self.assertTrue(dict_contains(response.data['data'], payload))
+
+    def test_update_not_found(self):
+        self.auth()
+
+        encoded_request = bytes(json.dumps(self.sample_payload_with_labels), encoding='utf-8')
+
+        response = self.client.patch(reverse('events:event_update', args=(0,)),
+                          data=encoded_request, content_type='application/json')
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_update_wrong_format(self):
+        self.auth()
+
+        response = self.client.post(reverse('events:event_create'), self.sample_payload_with_labels)
+
+        event_id = response.data['data']['id']
+
+        payload = self.sample_payload_with_labels.copy()
+        payload['start'] = payload['end'] = 'nothing good'
+
+        encoded_request = bytes(json.dumps(payload), encoding='utf-8')
+
+        response = self.client.patch(reverse('events:event_update', args=(event_id,)),
+                                     data=encoded_request, content_type='application/json')
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_create_error(self):
+        self.auth()
+        payload = self.sample_payload_with_labels.copy()
+        payload['start'] = 'wrong_date format'
+        response = self.client.post(reverse('events:event_create'), payload)
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_period_without_periodic_flag_error(self):
+        self.auth()
+        payload = self.sample_payload_with_labels.copy()
+        payload['period'] = "00:10:00"
+        payload['periodic'] = False
+
+        response = self.client.post(reverse('events:event_create'), payload)
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+
+
+
+
+
 
 

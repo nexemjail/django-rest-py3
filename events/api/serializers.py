@@ -68,11 +68,8 @@ class EventSerializer(serializers.ModelSerializer):
         # TODO: handle media and labels
         media = validated_data.pop('media', None)
 
-        labels = validated_data.pop('labels', None)
-        if labels is None:
-            instance.labels = None
-        else:
-            instance.labels = Label.create_all(list(map(lambda x: x['name'], labels)))
+        labels = validated_data.pop('labels', [])
+        instance.labels = Label.create_all(list(map(lambda x: x['name'], labels))) if labels else []
 
         instance.description = validated_data.get('description', instance.description)
         instance.start = validated_data.get('start', instance.start)
@@ -102,30 +99,19 @@ class EventCreateSerializer(serializers.ModelSerializer):
     period = serializers.DurationField(default=None, required=False, allow_null=True)
     media = serializers.FileField(required=False)
 
-    def validate_period(self, period):
-        period = period
-        return period
-
     def validate_status(self, attr):
         return EventStatus.objects.filter(status=attr).first()
 
     def validate(self, attrs):
+        if attrs.get('period') and not attrs.get('periodic'):
+            raise serializers.ValidationError({'period': 'Periodic flag must be set if period is defined'})
         return validate_period(attrs)
 
     def create(self, validated_data):
         label_list = validated_data.pop('labels', None)
         media = validated_data.pop('media', None)
 
-        if label_list:
-            existing_labels = Label.objects.filter(name__in=label_list)
-            labels_to_create = set(label_list) - set(existing_labels.values_list('name', flat=True))
-
-            all_labels = existing_labels
-            if labels_to_create:
-                Label.objects.bulk_create((Label(name=l) for l in labels_to_create))
-
-                all_labels = Label.objects.filter(name__in=label_list)
-            validated_data['labels'] = all_labels.values_list('id', flat=True)
+        validated_data['labels'] = Label.create_all(label_list)
 
         if 'next_notification' not in validated_data:
             validated_data['next_notification'] = validated_data['start'] - timedelta(minutes=5)

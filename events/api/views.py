@@ -33,7 +33,7 @@ class EventCreateAPIView(generics.CreateAPIView, JWTAuth):
                 message='Invalid data',
                 data=serializer.errors
             )
-        return response.Response(response_json)
+        return response.Response(response_json, status=response_json['code'])
 
 
 class EventDetailAPIView(generics.RetrieveUpdateAPIView, JWTAuth):
@@ -46,7 +46,6 @@ class EventDetailAPIView(generics.RetrieveUpdateAPIView, JWTAuth):
         response = super(EventDetailAPIView, self).retrieve(request, *args, **kwargs)
         response.data = template_response(code=response.status_code, data=response.data)
         return response
-
 
     @refresh_jwt
     def patch(self, request, *args, **kwargs):

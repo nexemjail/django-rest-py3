@@ -7,4 +7,4 @@ install:
   - pip install -r requirements.txt
 before_script:
  - psql -c 'create database travis_ci_test;' -U postgres
-script: python manage.py test
+script: python manage.py test --settings=djangorest.test_settings

@@ -29,7 +29,8 @@ class EventTests(TestCase):
         self.sample_payload = {
           "description": "We are number one",
           "start": "1997-08-06 23:12:12",
-          "status": "W"
+          "status": "W",
+          "end": "1997-08-06 23:12:13"
         }
 
         self.sample_payload_with_labels = dict(labels=["a", "b"], **self.sample_payload.copy())
@@ -188,6 +189,16 @@ class EventTests(TestCase):
         payload = self.sample_payload_with_labels.copy()
         payload['period'] = "00:10:00"
         payload['periodic'] = False
+
+        response = self.client.post(reverse('events:event_create'), payload)
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_error_creating_overlapping_events(self):
+        self.auth()
+        payload = self.sample_payload_with_labels.copy()
+
+        self.client.post(reverse('events:event_create'), payload)
 
         response = self.client.post(reverse('events:event_create'), payload)
 

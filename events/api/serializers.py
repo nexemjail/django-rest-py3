@@ -1,6 +1,5 @@
 from datetime import timedelta
-
-from dateutil.relativedelta import relativedelta
+from django.db.models import Max, Min, F
 
 from rest_framework import serializers
 
@@ -105,6 +104,24 @@ class EventCreateSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs.get('period') and not attrs.get('periodic'):
             raise serializers.ValidationError({'period': 'Periodic flag must be set if period is defined'})
+
+        next_notification = attrs.get('next_notification')
+        attrs['next_notification'] = next_notification if next_notification else attrs['start'] - timedelta(minutes=5)
+
+        if attrs['end']:
+            # TODO: pass user here!
+            start, end = attrs['start'], attrs['end']
+
+            # Enhance this to be as fast as dick!
+            # overlapping_events_count = Event.objects.filter(end__isnull=False)\
+            #     .annotate(max=Max(start, 'start')).annotate(min=Min('end', end)).filter(max__lte=F('min')).count()
+
+            user = self.context.get('request').user
+            events = Event.objects.filter(end__isnull=False, user=user)
+            for e in events:
+                if max(e.start, start) <= min(e.end, end):
+                    raise serializers.ValidationError('Event is overlapping with others!')
+
         return validate_period(attrs)
 
     def create(self, validated_data):

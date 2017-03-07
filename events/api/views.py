@@ -17,7 +17,7 @@ class EventCreateAPIView(generics.CreateAPIView, JWTAuth):
 
     @refresh_jwt
     def post(self, *args, **kwargs):
-        serializer = self.serializer_class(data=self.request.data)
+        serializer = self.serializer_class(data=self.request.data, context=dict(request=self.request))
         if serializer.is_valid(raise_exception=False):
             obj = serializer.save(user=self.request.user)
             response_json = template_response(

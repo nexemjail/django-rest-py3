@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 from django.contrib.auth.models import User
 from django.test import TestCase
 
-from django.test import Client
 from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
 from events.models import Label

@@ -248,3 +248,70 @@ class EventTests(TestCase):
         self.create_dilemma()
         response = self.client.get(reverse('events:event_list') + '?is_periodic={}'.format(True))
         self.assertEqual(len(response.data['data']), 2)
+
+    def test_filter_start_equals(self):
+        self.create_dilemma()
+        response = self.client.get(reverse('events:event_list') + '?start={}'.format("1998-08-06 23:12:12"))
+        self.assertEqual(len(response.data['data']), 1)
+
+    def test_filter_start_from(self):
+        self.create_dilemma()
+        response = self.client.get(reverse('events:event_list') + '?starts_from={}'.format("1998-08-06 22:12:12"))
+        self.assertEqual(len(response.data['data']), 2)
+
+    def test_filter_start_before(self):
+        self.create_dilemma()
+        response = self.client.get(reverse('events:event_list') + '?starts_before={}'.format("1998-08-06 23:12:13"))
+        self.assertEqual(len(response.data['data']), 2)
+
+    def test_filter_ends_equals(self):
+        self.create_dilemma()
+        response = self.client.get(reverse('events:event_list') + '?end={}'.format("2001-08-06 23:12:13"))
+        self.assertEqual(len(response.data['data']), 1)
+
+    def test_filter_ends_before(self):
+        self.create_dilemma()
+        response = self.client.get(reverse('events:event_list') + '?ends_before={}'.format('1999-08-06 23:12:12'))
+        self.assertEqual(len(response.data['data']), 1)
+
+    def test_filter_ends_after(self):
+        self.create_dilemma()
+        response = self.client.get(reverse('events:event_list') + '?ends_after={}'.format("1999-08-06 23:12:12"))
+        self.assertEqual(len(response.data['data']), 2)
+
+    def test_notification_at(self):
+        self.create_dilemma()
+        response = self.client.get(reverse('events:event_list') + '?next_notification={}'.format('1998-08-06 23:07:12'))
+        self.assertEqual(len(response.data['data']), 1)
+
+    def test_notification_before(self):
+        self.create_dilemma()
+        response = self.client.get(reverse('events:event_list') +
+                                   '?next_notification_before={}'.format("1998-08-06 23:12:12"))
+        self.assertEqual(len(response.data['data']), 2)
+
+    def test_notification_after(self):
+        self.create_dilemma()
+        response = self.client.get(reverse('events:event_list') +
+                                   '?next_notification_after={}'.format("2000-08-06 23:10:14"))
+        self.assertEqual(len(response.data['data']), 0)
+
+    def test_period_equals(self):
+        self.create_dilemma()
+        response = self.client.get(reverse('events:event_list') +
+                                   '?period={}'.format("30 00:00:00"))
+        self.assertEqual(len(response.data['data']), 1)
+
+    def test_period_less(self):
+        self.create_dilemma()
+        response = self.client.get(reverse('events:event_list') +
+                                   '?period_less={}'.format("29 00:00:00"))
+        self.assertEqual(len(response.data['data']), 1)
+
+    def test_period_more(self):
+        self.create_dilemma()
+        response = self.client.get(reverse('events:event_list') +
+                                   '?period_more={}'.format("20 00:00:00"))
+        self.assertEqual(len(response.data['data']), 2)
+
+

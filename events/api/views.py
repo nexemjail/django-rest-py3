@@ -21,7 +21,7 @@ class EventCreateAPIView(generics.CreateAPIView, JWTAuth):
         if serializer.is_valid(raise_exception=False):
             obj = serializer.save(user=self.request.user)
             response_json = template_response(
-                'Created',
+                 'Created',
                  status.HTTP_201_CREATED,
                  'Event created',
                  EventSerializer(instance=obj, context=dict(request=self.request)).data

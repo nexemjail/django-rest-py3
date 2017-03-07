@@ -193,11 +193,3 @@ class EventTests(TestCase):
         response = self.client.post(reverse('events:event_create'), payload)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-
-
-
-
-
-
-
-

@@ -65,7 +65,7 @@ class EventSerializer(serializers.ModelSerializer):
         return validate_period(attrs, self.instance)
 
     def update(self, instance, validated_data):
-        # TODO: handle media and labels
+        # TODO: handle media
         media = validated_data.pop('media', None)
 
         labels = validated_data.pop('labels', [])

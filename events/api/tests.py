@@ -20,7 +20,8 @@ def dict_contains(parent, child):
 
 
 class EventTests(TestCase):
-    CREATE_EVENT_URL = reverse('events:event_create')
+    EVENT_CREATE_URL = reverse('events:event_create')
+    EVENT_LIST_URL = reverse('events:event_list')
 
     def setUp(self):
 
@@ -77,7 +78,7 @@ class EventTests(TestCase):
 
     def test_create_event(self):
         self.auth()
-        response = self.client.post(self.CREATE_EVENT_URL, self.sample_payload)
+        response = self.client.post(self.EVENT_CREATE_URL, self.sample_payload)
         start_time = datetime.strptime(self.sample_payload['start'], '%Y-%m-%d %H:%M:%S')\
             .strftime('%Y-%m-%dT%H:%M:%SZ')
 
@@ -97,21 +98,21 @@ class EventTests(TestCase):
         labels = ['a', 'b']
         payload['labels'] = labels
 
-        self.client.post(self.CREATE_EVENT_URL, payload)
+        self.client.post(self.EVENT_CREATE_URL, payload)
 
         self.assertEquals(Label.objects.filter(name__in=labels).count(), len(labels))
 
     def test_privacy(self):
         self.auth()
-        self.client.post(self.CREATE_EVENT_URL, self.sample_payload_with_labels)
+        self.client.post(self.EVENT_CREATE_URL, self.sample_payload_with_labels)
 
-        response = self.client.get(reverse('events:event_list'))
+        response = self.client.get(self.EVENT_LIST_URL)
 
         first_user_data = response.json()['data']
 
         self.auth(username='alex1@gmail.com')
 
-        response = self.client.get(reverse('events:event_list'))
+        response = self.client.get(self.EVENT_LIST_URL)
 
         self.assertNotEqual(len(response.json()['data']), first_user_data)
 
@@ -119,14 +120,14 @@ class EventTests(TestCase):
 
         self.auth()
         del self.client.cookies[settings.JWT_KEY]
-        response = self.client.get(reverse('events:event_list'))
+        response = self.client.get(self.EVENT_LIST_URL)
         self.assertEquals(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_send_file(self):
         self.auth()
         payload = self.sample_payload_with_labels.copy()
         payload['media'] = open('img.jpg', 'rb')
-        response = self.client.post(self.CREATE_EVENT_URL, payload)
+        response = self.client.post(self.EVENT_CREATE_URL, payload)
 
         event_id = response.data['data']['id']
 
@@ -136,7 +137,7 @@ class EventTests(TestCase):
         self.auth()
         payload = self.sample_payload.copy()
 
-        response = self.client.post(self.CREATE_EVENT_URL, payload)
+        response = self.client.post(self.EVENT_CREATE_URL, payload)
 
         event_id = response.data['data']['id']
 
@@ -172,7 +173,7 @@ class EventTests(TestCase):
     def test_update_wrong_format(self):
         self.auth()
 
-        response = self.client.post(self.CREATE_EVENT_URL, self.sample_payload_with_labels)
+        response = self.client.post(self.EVENT_CREATE_URL, self.sample_payload_with_labels)
 
         event_id = response.data['data']['id']
 
@@ -190,7 +191,7 @@ class EventTests(TestCase):
         self.auth()
         payload = self.sample_payload_with_labels.copy()
         payload['start'] = 'wrong_date format'
-        response = self.client.post(self.CREATE_EVENT_URL, payload)
+        response = self.client.post(self.EVENT_CREATE_URL, payload)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -200,7 +201,7 @@ class EventTests(TestCase):
         payload['period'] = "00:10:00"
         payload['periodic'] = False
 
-        response = self.client.post(self.CREATE_EVENT_URL, payload)
+        response = self.client.post(self.EVENT_CREATE_URL, payload)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -208,16 +209,16 @@ class EventTests(TestCase):
         self.auth()
         payload = self.sample_payload_with_labels.copy()
 
-        self.client.post(self.CREATE_EVENT_URL, payload)
+        self.client.post(self.EVENT_CREATE_URL, payload)
 
-        response = self.client.post(self.CREATE_EVENT_URL, payload)
+        response = self.client.post(self.EVENT_CREATE_URL, payload)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def create_dilemma(self):
         self.auth()
         payload = self.sample_payload.copy()
-        self.client.post(self.CREATE_EVENT_URL, payload)
+        self.client.post(self.EVENT_CREATE_URL, payload)
         payload = {
           "description": "We are number two",
           "start": "1998-08-06 23:12:12",
@@ -226,7 +227,7 @@ class EventTests(TestCase):
           "periodic": True,
           "period": "20 00:00:01"
         }
-        self.client.post(self.CREATE_EVENT_URL, payload)
+        self.client.post(self.EVENT_CREATE_URL, payload)
 
         payload = {
           "description": "We are number three",
@@ -234,91 +235,101 @@ class EventTests(TestCase):
           "status": "P",
           "end": "2001-08-06 23:12:13",
         }
-        self.client.post(self.CREATE_EVENT_URL, payload)
+        self.client.post(self.EVENT_CREATE_URL, payload)
 
     def test_filter_status(self):
         self.create_dilemma()
-        response = self.client.get(reverse('events:event_list') + '?status=P')
+        response = self.client.get(self.EVENT_LIST_URL + '?status=P')
         self.assertEqual(len(response.data['data']), 1)
 
     def test_filter_description_specific(self):
         self.create_dilemma()
-        response = self.client.get(reverse('events:event_list') + '?description={}'.format('three'))
+        response = self.client.get(self.EVENT_LIST_URL + '?description={}'.format('three'))
         self.assertEqual(len(response.data['data']), 1)
 
     def test_filter_description_common(self):
         self.create_dilemma()
-        response = self.client.get(reverse('events:event_list') + '?description={}'.format('We are'))
+        response = self.client.get(self.EVENT_LIST_URL + '?description={}'.format('We are'))
         self.assertEqual(len(response.data['data']), 3)
 
     def test_filter_is_periodic(self):
         self.create_dilemma()
-        response = self.client.get(reverse('events:event_list') + '?is_periodic={}'.format(True))
+        response = self.client.get(self.EVENT_LIST_URL + '?is_periodic={}'.format(True))
         self.assertEqual(len(response.data['data']), 2)
 
     def test_filter_start_equals(self):
         self.create_dilemma()
-        response = self.client.get(reverse('events:event_list') + '?start={}'.format("1998-08-06 23:12:12"))
+        response = self.client.get(self.EVENT_LIST_URL + '?start={}'.format("1998-08-06 23:12:12"))
         self.assertEqual(len(response.data['data']), 1)
 
     def test_filter_start_from(self):
         self.create_dilemma()
-        response = self.client.get(reverse('events:event_list') + '?starts_from={}'.format("1998-08-06 22:12:12"))
+        response = self.client.get(self.EVENT_LIST_URL + '?starts_from={}'.format("1998-08-06 22:12:12"))
         self.assertEqual(len(response.data['data']), 2)
 
     def test_filter_start_before(self):
         self.create_dilemma()
-        response = self.client.get(reverse('events:event_list') + '?starts_before={}'.format("1998-08-06 23:12:13"))
+        response = self.client.get(self.EVENT_LIST_URL + '?starts_before={}'.format("1998-08-06 23:12:13"))
         self.assertEqual(len(response.data['data']), 2)
 
     def test_filter_ends_equals(self):
         self.create_dilemma()
-        response = self.client.get(reverse('events:event_list') + '?end={}'.format("2001-08-06 23:12:13"))
+        response = self.client.get(self.EVENT_LIST_URL + '?end={}'.format("2001-08-06 23:12:13"))
         self.assertEqual(len(response.data['data']), 1)
 
     def test_filter_ends_before(self):
         self.create_dilemma()
-        response = self.client.get(reverse('events:event_list') + '?ends_before={}'.format('1999-08-06 23:12:12'))
+        response = self.client.get(self.EVENT_LIST_URL + '?ends_before={}'.format('1999-08-06 23:12:12'))
         self.assertEqual(len(response.data['data']), 1)
 
     def test_filter_ends_after(self):
         self.create_dilemma()
-        response = self.client.get(reverse('events:event_list') + '?ends_after={}'.format("1999-08-06 23:12:12"))
+        response = self.client.get(self.EVENT_LIST_URL + '?ends_after={}'.format("1999-08-06 23:12:12"))
         self.assertEqual(len(response.data['data']), 2)
 
     def test_notification_at(self):
         self.create_dilemma()
-        response = self.client.get(reverse('events:event_list') + '?next_notification={}'.format('1998-08-06 23:07:12'))
+        response = self.client.get(self.EVENT_LIST_URL + '?next_notification={}'.format('1998-08-06 23:07:12'))
         self.assertEqual(len(response.data['data']), 1)
 
     def test_notification_before(self):
         self.create_dilemma()
-        response = self.client.get(reverse('events:event_list') +
+        response = self.client.get(self.EVENT_LIST_URL +
                                    '?next_notification_before={}'.format("1998-08-06 23:12:12"))
         self.assertEqual(len(response.data['data']), 2)
 
     def test_notification_after(self):
         self.create_dilemma()
-        response = self.client.get(reverse('events:event_list') +
+        response = self.client.get(self.EVENT_LIST_URL +
                                    '?next_notification_after={}'.format("2000-08-06 23:10:14"))
         self.assertEqual(len(response.data['data']), 0)
 
     def test_period_equals(self):
         self.create_dilemma()
-        response = self.client.get(reverse('events:event_list') +
+        response = self.client.get(self.EVENT_LIST_URL +
                                    '?period={}'.format("30 00:00:00"))
         self.assertEqual(len(response.data['data']), 1)
 
     def test_period_less(self):
         self.create_dilemma()
-        response = self.client.get(reverse('events:event_list') +
+        response = self.client.get(self.EVENT_LIST_URL +
                                    '?period_less={}'.format("29 00:00:00"))
         self.assertEqual(len(response.data['data']), 1)
 
     def test_period_more(self):
         self.create_dilemma()
-        response = self.client.get(reverse('events:event_list') +
+        response = self.client.get(self.EVENT_LIST_URL +
                                    '?period_more={}'.format("20 00:00:00"))
         self.assertEqual(len(response.data['data']), 2)
+
+    def test_delete_event(self):
+        self.auth()
+
+        response = self.client.post(self.EVENT_CREATE_URL, self.sample_payload_with_labels)
+        event_id = response.data['data']['id']
+
+        response = self.client.delete(reverse('events:event_detail', args=(event_id,)))
+
+        self.assertEquals(Event.objects.filter(pk=event_id).count(), 0)
 
 

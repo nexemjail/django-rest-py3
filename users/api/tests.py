@@ -13,8 +13,8 @@ from django.conf import settings
 
 
 class ApiTestCase(TestCase):
-    AUTH_URL = '/auth/'
-    REGISTER_URL = '/users/user/register/'
+    AUTH_URL = reverse('auth')
+    REGISTER_URL = reverse('users:user_register')
     USER_PATH = '/users/user/{}/'
 
     def setUp(self):

@@ -6,9 +6,10 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 
 from django.test import Client
+from rest_framework import status
 from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
 
-from common.auth import JWT_KEY
+from django.conf import settings
 
 
 class ApiTestCase(TestCase):
@@ -79,6 +80,13 @@ class ApiTestCase(TestCase):
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
+    def test_not_authorized_error(self):
+        response = self.register()
+        self.authenticate()
+        del self.client.cookies[settings.JWT_KEY]
+        response = self.get_user(response)
+        self.assertEquals(response.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_get_info(self):
         response = self.register()
         self.authenticate()
@@ -91,7 +99,7 @@ class ApiTestCase(TestCase):
         response = self.register()
 
         self.authenticate()
-        self.client.cookies['JWT'] = 'invalid cookie'
+        self.client.cookies[settings.JWT_KEY] = 'invalid cookie'
 
         response = self.get_user(response)
 
@@ -114,10 +122,10 @@ class ApiTestCase(TestCase):
         response_registration = self.register()
 
         response = self.authenticate()
-        cookie = response.cookies.get(JWT_KEY)
+        cookie = response.cookies.get(settings.JWT_KEY)
 
         # somehow signature is the same if executed fast enough
         with freeze_time(datetime.now() + timedelta(seconds=10)):
             response = self.get_user(response_registration)
 
-            self.assertNotEqual(response.cookies.get(JWT_KEY).value, cookie.value)
+            self.assertNotEqual(response.cookies.get(settings.JWT_KEY).value, cookie.value)

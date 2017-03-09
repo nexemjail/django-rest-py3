@@ -196,3 +196,5 @@ JWT_AUTH = {
 
     'JWT_AUTH_HEADER_PREFIX': 'JWT',
 }
+
+JWT_KEY = 'JWT'

@@ -1,12 +1,12 @@
 import json
 
+from django.conf import settings
 from django.urls.base import reverse
 from datetime import datetime
 
 from django.contrib.auth.models import User
 from django.test import TestCase
-
-from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
+from rest_framework import status
 
 from events.models import Label
 from ..models import Event, EventStatus, EventMedia, EVENT_STATUSES
@@ -115,6 +115,13 @@ class EventTests(TestCase):
 
         self.assertNotEqual(len(response.json()['data']), first_user_data)
 
+    def test_permission(self):
+
+        self.auth()
+        del self.client.cookies[settings.JWT_KEY]
+        response = self.client.get(reverse('events:event_list'))
+        self.assertEquals(response.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_send_file(self):
         self.auth()
         payload = self.sample_payload_with_labels.copy()
@@ -160,7 +167,7 @@ class EventTests(TestCase):
 
         response = self.client.patch(reverse('events:event_update', args=(0,)),
                                      data=encoded_request, content_type='application/json')
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_wrong_format(self):
         self.auth()
@@ -177,7 +184,7 @@ class EventTests(TestCase):
         response = self.client.patch(reverse('events:event_update', args=(event_id,)),
                                      data=encoded_request, content_type='application/json')
 
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_create_error(self):
         self.auth()
@@ -185,7 +192,7 @@ class EventTests(TestCase):
         payload['start'] = 'wrong_date format'
         response = self.client.post(self.CREATE_EVENT_URL, payload)
 
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_period_without_periodic_flag_error(self):
         self.auth()
@@ -195,7 +202,7 @@ class EventTests(TestCase):
 
         response = self.client.post(self.CREATE_EVENT_URL, payload)
 
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_error_creating_overlapping_events(self):
         self.auth()
@@ -205,7 +212,7 @@ class EventTests(TestCase):
 
         response = self.client.post(self.CREATE_EVENT_URL, payload)
 
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def create_dilemma(self):
         self.auth()

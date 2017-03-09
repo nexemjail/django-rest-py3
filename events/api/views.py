@@ -1,7 +1,7 @@
 from rest_framework import generics, status, permissions
 
 from django_filters.rest_framework import DjangoFilterBackend
-from common.auth import refresh_jwt
+from common.auth import refresh_jwt, JWTAuth
 from common.exceptions import HttpNotFound404
 from common.permissions import IsAuthoredBy, IsMediaAuthoredBy
 from common.utils import responsify
@@ -28,9 +28,9 @@ class EventCreateAPIView(generics.CreateAPIView):
             return serializer.errors, status.HTTP_400_BAD_REQUEST
 
 
-class EventDetailAPIView(generics.RetrieveUpdateAPIView):
+class EventDetailAPIView(generics.RetrieveUpdateDestroyAPIView, JWTAuth):
     serializer_class = EventSerializer
-    permission_classes = [IsAuthoredBy]
+    permission_classes = [IsAuthoredBy, permissions.IsAuthenticated]
     queryset = Event
 
     def get_object(self):
@@ -49,10 +49,15 @@ class EventDetailAPIView(generics.RetrieveUpdateAPIView):
     def patch(self, request, *args, **kwargs):
         return super(EventDetailAPIView, self).patch(request, *args, **kwargs)
 
+    @refresh_jwt
+    @responsify
+    def destroy(self, request, *args, **kwargs):
+        return super(EventDetailAPIView, self).destroy(request, *args, **kwargs)
+
 
 class EventMediaDetailAPIView(generics.RetrieveAPIView):
     serializer_class = EventMediaSerializer
-    permission_classes = [IsMediaAuthoredBy]
+    permission_classes = [IsMediaAuthoredBy, permissions.IsAuthenticated]
     queryset = EventMedia.objects.all()
 
     @refresh_jwt
@@ -63,7 +68,7 @@ class EventMediaDetailAPIView(generics.RetrieveAPIView):
 
 class EventListAPIView(generics.ListAPIView):
     serializer_class = EventSerializer
-    permission_classes = [IsAuthoredBy]
+    permission_classes = [IsAuthoredBy, permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filter_class = EventListFilter
 

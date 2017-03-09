@@ -1,12 +1,11 @@
 from rest_framework_jwt.authentication import BaseJSONWebTokenAuthentication
 from rest_framework_jwt.settings import api_settings
-
-JWT_KEY = 'JWT'
+from django.conf import settings
 
 
 class JWTAuth(BaseJSONWebTokenAuthentication):
     def get_jwt_value(self, request):
-        return request.COOKIES.get(JWT_KEY)
+        return request.COOKIES.get(settings.JWT_KEY)
 
 
 def get_new_json_token(user):
@@ -26,6 +25,6 @@ def refresh_jwt(func):
         user = request.user
 
         token = get_new_json_token(user)
-        response.set_cookie(JWT_KEY, token)
+        response.set_cookie(settings.JWT_KEY, token)
         return response
     return inner

@@ -42,6 +42,9 @@ INSTALLED_APPS = [
     'rest_framework_jwt',
     'users.apps.UsersConfig',
     'events.apps.EventsConfig',
+
+    # js need it
+    'webpack_loader',
 ]
 
 MIDDLEWARE = [
@@ -144,6 +147,18 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
 STATIC_URL = '/static/'
+
+STATICFILES_DIRS = (
+    #This lets Django's collectstatic store our bundles
+    os.path.join(BASE_DIR, 'assets'),
+)
+
+WEBPACK_LOADER = {
+    'DEFAULT': {
+        'BUNDLE_DIR_NAME': 'bundles/',
+        'STATS_FILE': os.path.join(BASE_DIR, 'webpack-stats.json'),
+    }
+}
 
 LOGGING = {
     'version': 1,

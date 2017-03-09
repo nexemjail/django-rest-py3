@@ -116,9 +116,9 @@ class EventCreateSerializer(serializers.ModelSerializer):
             #     .annotate(max=Max(start, 'start')).annotate(min=Min('end', end)).filter(max__lte=F('min')).count()
 
             user = self.context.get('request').user
-            events = Event.objects.filter(end__isnull=False, user=user)
-            for e in events:
-                if max(e.start, start) <= min(e.end, end):
+            event_values = Event.objects.filter(end__isnull=False, user=user).values_list('start', 'end')
+            for event_start, event_end in event_values:
+                if max(event_start, start) <= min(event_end, end):
                     raise serializers.ValidationError('Event is overlapping with others!')
 
         return validate_period(attrs)

@@ -1,9 +1,8 @@
 from datetime import timedelta
-from django.db.models import Max, Min, F
 
 from rest_framework import serializers
 
-from events.models import Label, EVENT_CHOICES, EVENT_STATUSES
+from events.models import Label, EVENT_CHOICES
 from ..models import Event, EventStatus, EventMedia, EVENT_CREATE_CHOICES
 
 

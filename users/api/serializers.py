@@ -1,8 +1,5 @@
 from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
 from rest_framework import serializers, validators
-
-from events.models import Event, EventStatus, EventMedia, EventStatus, EVENT_CREATE_CHOICES
 
 
 class UserSerializer(serializers.ModelSerializer):

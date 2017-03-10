@@ -16,12 +16,14 @@ Including another URLconf
 from django.conf.urls import url, include
 from django.contrib import admin
 from django.conf import settings
+from django.views.generic import TemplateView
 from .views import ObtainJSONWebToken
 
 from users.api import urls as api_urls
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(r'^index/$', TemplateView.as_view(template_name='index.html')),
     url(r'^auth/$', ObtainJSONWebToken.as_view(), name='auth'),
     url(r'^events/', include('events.urls', namespace='events')),
     url(r'^users/', include('users.urls', namespace='users')),

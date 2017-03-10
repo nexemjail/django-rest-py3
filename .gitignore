@@ -24,4 +24,5 @@ media/
 ubuntu-xenial-16.04-cloudimg-console.log
 /.vagrant/
 .venv
+assets/bundles
 
